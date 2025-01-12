@@ -25,7 +25,7 @@ def upload_ad():
             properties:
                 video_link:
                     type: string
-                    description: The link to the video from firbase storage
+                    description: The link to the video ad
                 advertiser_link:
                     type: string
                     description: The link to the advertiser's website
@@ -71,24 +71,18 @@ def upload_ad():
         return jsonify({"message": "Ad uploaded successfully!", '_id':ad_object["_id"]}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# 2. Create a route to fetch an ad
-@ads_blue_print.route('/get_ad/<ad_id>', methods=['GET'])
-def get_ad(ad_id):
+    
+# 2. Create a route to fetch a random ad
+@ads_blue_print.route('/get_ad', methods=['GET'])
+def get_random_ad():
     """
-    Get an ad object from the MongoDB database
+    Get a random ad object from the MongoDB database
     ---
-    parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: string
-        description: The unique identifier of the ad object
     responses:
         200:
-            description: The ad object was fetched successfully
+            description: A random ad object was fetched successfully
         404:
-            description: The ad object was not found
+            description: No ads available in the database
         500:
             description: An error occurred while fetching the ad object
     """
@@ -98,21 +92,22 @@ def get_ad(ad_id):
     if db is None:
         return jsonify({"error": "Could not connect to the database"}), 500
 
-    # Fetch the ad object from the database
-    # Attempt to find the ad by ID
     try:
         ads_collection = db['ads']
-        ad = ads_collection.find_one({"_id": ad_id})
+        # Use MongoDB's $sample aggregation stage to fetch a random document
+        random_ad_cursor = ads_collection.aggregate([{"$sample": {"size": 1}}])
+        random_ad = next(random_ad_cursor, None)  # Get the first (and only) result
 
-        if not ad:
-            return jsonify({"error": "Ad not found"}), 404
+        if not random_ad:
+            return jsonify({"error": "No ads available"}), 404
 
         # Convert the MongoDB result to a JSON-serializable format
-        ad['_id'] = str(ad['_id'])  # Ensure ID is a string for JSON serialization
-        return jsonify(ad), 200
+        random_ad['_id'] = str(random_ad['_id'])  # Ensure ID is a string for JSON serialization
+        return jsonify(random_ad), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # 3. Create a route to update advertiser_link
 @ads_blue_print.route('/update_advertiser_link/<ad_id>', methods=['PUT'])
