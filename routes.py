@@ -29,6 +29,9 @@ def upload_ad():
                 advertiser_link:
                     type: string
                     description: The link to the advertiser's website
+                advertiser_icon:
+                    type: string
+                    description: The URL to the advertiser's icon image
     responses:
         200:
             description: Ad uploaded successfully
@@ -46,22 +49,25 @@ def upload_ad():
         return jsonify({"error": "Could not connect to the database"}), 500
     
     # Check if the required fields are present
-    if not data or not all(key in data for key in ['video_link', 'advertiser_link']):
-        return jsonify({"error": "Missing required fields: 'video_link' and 'advertiser_link'"}), 400
-
-    # check if the video_link is a string
-    if not isinstance(data['video_link'], str):
-        return jsonify({"error": "The 'video_link' field should be a string"}), 400
+    required_fields = ['video_link', 'advertiser_link', 'advertiser_icon']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
     
-    # check if the advertiser_link is a string
-    if not isinstance(data['advertiser_link'], str):
-        return jsonify({"error": "The 'advertiser_link' field should be a string"}), 400
+    #if not data or not all(key in data for key in required_fields):
+    #    return jsonify({"error": f"Missing required fields: {', '.join(required_fields)}"}), 400
+
+    # Validate fields are strings
+    for field in required_fields:
+        if not isinstance(data[field], str):
+            return jsonify({"error": f"The '{field}' field should be a string"}), 400
 
     # Create an ad object
     ad_object = {
         "_id": str(uuid.uuid4()), 
         "video_link": data['video_link'],
-        "advertiser_link": data['advertiser_link']
+        "advertiser_link": data['advertiser_link'],
+        "advertiser_icon": data['advertiser_icon']
     }
 
     # Insert the ad object into the database
@@ -167,8 +173,67 @@ def update_advertiser_link(ad_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+#4. Create a route to update advertiser_icon
+@ads_blue_print.route('/update_advertiser_icon/<ad_id>', methods=['PUT'])
+def update_advertiser_icon(ad_id):
+    """
+    Update the advertiser_icon for an existing ad
+    ---
+    parameters:
+      - name: ad_id
+        in: path
+        required: true
+        type: string
+        description: The ID of the ad to update
+      - name: body
+        in: body
+        required: true
+        schema:
+            type: object
+            properties:
+                advertiser_icon:
+                    type: string
+                    description: The new advertiser icon URL
+    responses:
+        200:
+            description: Advertiser icon updated successfully
+        404:
+            description: Ad not found
+        400:
+            description: Invalid input
+        500:
+            description: An error occurred while updating the advertiser icon
+    """
+    data = request.json
+
+    # Validate the input
+    if not data or 'advertiser_icon' not in data or not isinstance(data['advertiser_icon'], str):
+        return jsonify({"error": "Invalid input. 'advertiser_icon' must be a string"}), 400
+
+    db = MongoConnectionManager.get_db()
+
+    # Check if the database connection was successful
+    if db is None:
+        return jsonify({"error": "Could not connect to the database"}), 500
+
+    # Attempt to update the advertiser_icon
+    try:
+        ads_collection = db['ads']
+        result = ads_collection.update_one(
+            {"_id": ad_id},
+            {"$set": {"advertiser_icon": data['advertiser_icon']}}
+        )
+
+        if result.matched_count == 0:
+            return jsonify({"error": "Ad not found"}), 404
+
+        return jsonify({"message": "Advertiser icon updated successfully!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
       
-# 4. Create a route to fetch all ads
+# 5. Create a route to fetch all ads
 @ads_blue_print.route('/get_all_ads', methods=['GET'])
 def get_all_ads():
     """
@@ -200,7 +265,7 @@ def get_all_ads():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-# 5. Create a route to delete an ad
+# 6. Create a route to delete an ad
 @ads_blue_print.route('/delete_ad/<ad_id>', methods=['DELETE'])
 def delete_ad(ad_id):
     """
@@ -239,7 +304,7 @@ def delete_ad(ad_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-# 6. Create a route to delete all ads
+# 7. Create a route to delete all ads
 @ads_blue_print.route('/delete_all_ads', methods=['DELETE'])
 def delete_all_ads():
     """
