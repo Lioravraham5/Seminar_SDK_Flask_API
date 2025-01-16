@@ -353,21 +353,19 @@ def delete_all_ads():
 @ads_blue_print.route('/create_package/<package_name>', methods=['POST'])
 def create_package(package_name):
     """
-    Create a new package object for an app with an empty ads_events array
+    Create a new package object for an app with an empty ads_events array.
     ---
     parameters:
       - name: package_name
         in: path
         required: true
         type: string
-        description: The unique package name for the app
+        description: The unique package name for the app.
     responses:
         200:
-            description: Package created successfully
-        400:
-            description: Invalid input or package already exists
+            description: Package created successfully or already exists.
         500:
-            description: An error occurred while creating the package
+            description: An error occurred while creating the package.
     """
     db = MongoConnectionManager.get_db()
 
@@ -375,12 +373,14 @@ def create_package(package_name):
     if db is None:
         return jsonify({"error": "Could not connect to the database"}), 500
 
-    # Check if the package already exists
     try:
         packages_collection = db['packages']
+
+        # Check if the package already exists
         existing_package = packages_collection.find_one({"_id": package_name})
         if existing_package:
-            return jsonify({"error": "Package with this name already exists"}), 400
+            # Return success if the package already exists
+            return jsonify({"message": f"Package '{package_name}' already exists."}), 200
 
         # Create the package object
         package_object = {
