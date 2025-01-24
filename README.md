@@ -2,6 +2,8 @@
 This is an Ad Management API built using Flask and MongoDB that allows you to upload, update, delete, and fetch  Video ads. 
 It provides various endpoints for interacting with advertisements in the application and in the database.
 
+<img src="https://github.com/user-attachments/assets/9edd91e0-de66-453b-b4ab-b91938dbc905" alt="Architecture Overview" style="width: 75%; height: 75%;">
+
 ## Overview
 This API is designed to handle advertisements in a system. 
 It allows the management of Video ads by uploading new ads, updating existing ones, fetching random ads, and deleting ads, among other operations. 
